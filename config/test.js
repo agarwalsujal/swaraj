@@ -8,9 +8,9 @@ module.exports = {
   },
 
   database: {
-    name: process.env.TEST_DB_NAME || 'swaraj_test',
+    name: process.env.TEST_DB_NAME || 'cyra_db_new',
     username: process.env.TEST_DB_USER || 'postgres',
-    password: process.env.TEST_DB_PASSWORD || 'postgres',
+    password: process.env.TEST_DB_PASSWORD || 'root',
     host: process.env.TEST_DB_HOST || 'localhost',
     port: process.env.TEST_DB_PORT || 5432,
     logQueries: false,

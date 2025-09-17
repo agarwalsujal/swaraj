@@ -29,7 +29,6 @@ exports.processQuery = async (req, res) => {
       metadata: {
         response: {
           text: text,
-          promptFeedback: response.promptFeedback(),
           candidates: response.candidates?.map(c => ({
             content: c.content,
             finishReason: c.finishReason

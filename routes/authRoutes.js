@@ -6,7 +6,7 @@ const { validateRegistration, validateLogin } = require('../middlewares/validati
 // Auth routes
 router.post('/register', validateRegistration, authController.register);
 router.post('/login', validateLogin, authController.login);
-router.get('/logout', authController.logout);
+router.post('/logout', authController.logout);
 
 // OAuth routes
 router.get('/google', authController.googleAuth);

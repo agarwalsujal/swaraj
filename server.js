@@ -123,18 +123,23 @@ process.on('SIGINT', () => {
 
 // Graceful shutdown function
 const shutdown = () => {
-  server.close(() => {
-    logger.info('HTTP server closed.');
+  if (global.server) {
+    global.server.close(() => {
+      logger.info('HTTP server closed.');
 
-    // Close database connection
-    sequelize.close().then(() => {
-      logger.info('Database connections closed.');
-      process.exit(0);
-    }).catch(err => {
-      logger.error('Error during database disconnect', { error: err });
-      process.exit(1);
+      // Close database connection
+      sequelize.close().then(() => {
+        logger.info('Database connections closed.');
+        process.exit(0);
+      }).catch(err => {
+        logger.error('Error during database disconnect', { error: err });
+        process.exit(1);
+      });
     });
-  });
+  } else {
+    logger.info('Server not available for shutdown.');
+    process.exit(0);
+  }
 };
 
 // Unhandled rejection and exception handlers
@@ -162,7 +167,7 @@ const startServer = async () => {
     logger.info('Database synchronized');
 
     // Start the server
-    const server = app.listen(PORT, () => {
+    global.server = app.listen(PORT, () => {
       logger.info(`Server started successfully`, {
         port: PORT,
         environment: config.env,
@@ -171,12 +176,17 @@ const startServer = async () => {
     });
 
     // Return the server instance for the shutdown handler
-    return server;
+    return global.server;
   } catch (error) {
     logger.error('Unable to start server', { error: error.message, stack: error.stack });
     process.exit(1);
   }
 };
 
-// Start the server and store the instance
-const server = startServer();
+// Start the server only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+// Export for testing
+module.exports = app;

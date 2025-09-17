@@ -42,7 +42,8 @@ describe('Auth Routes Integration Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('email');
+      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.errors).toContain('Please provide a valid email');
     });
 
     it('should return 400 for short password', async () => {
@@ -56,7 +57,8 @@ describe('Auth Routes Integration Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('password');
+      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.errors).toContain('Password must be at least 6 characters long');
     });
   });
 
@@ -70,7 +72,8 @@ describe('Auth Routes Integration Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('email');
+      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.errors).toContain('Email is required');
     });
 
     it('should return 400 for missing password', async () => {
@@ -82,7 +85,8 @@ describe('Auth Routes Integration Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('password');
+      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.errors).toContain('Password is required');
     });
   });
 });
