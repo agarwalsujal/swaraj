@@ -56,7 +56,7 @@ module.exports = {
     // Add some initial logs
     await queryInterface.bulkInsert('Logs', [
       {
-        userId: null,
+        userId: adminId,
         level: 'info',
         message: 'System initialized',
         metadata: JSON.stringify({ event: 'system_start' }),

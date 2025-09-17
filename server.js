@@ -1,10 +1,13 @@
+// Load environment variables first (MUST be first)
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const passport = require('passport');
 const compression = require('compression');
 
-// Load environment-specific config first
+// Load environment-specific config after dotenv
 const config = require('./config');
 
 // Setup logger before anything else
