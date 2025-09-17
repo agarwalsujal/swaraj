@@ -4,53 +4,59 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { generateToken } = require('../utils/tokenUtils');
 
-// Configure Google OAuth Strategy
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.OAUTH_CALLBACK_URL
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    // Check if user exists with Google ID
-    let user = await User.findOne({
-      where: {
-        provider: 'google',
-        providerUserId: profile.id
+// Configure Google OAuth Strategy only if credentials are provided
+if (process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.GOOGLE_CLIENT_ID !== 'your_google_client_id' &&
+  process.env.GOOGLE_CLIENT_SECRET !== 'your_google_client_secret') {
+
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.OAUTH_CALLBACK_URL
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Check if user exists with Google ID
+      let user = await User.findOne({
+        where: {
+          provider: 'google',
+          providerUserId: profile.id
+        }
+      });
+
+      if (user) {
+        return done(null, user);
       }
-    });
 
-    if (user) {
+      // Check if user exists with same email
+      user = await User.findOne({
+        where: { email: profile.emails[0].value }
+      });
+
+      if (user) {
+        // Link Google account to existing user
+        user.provider = 'google';
+        user.providerUserId = profile.id;
+        user.isVerified = true; // Google accounts are pre-verified
+        await user.save();
+        return done(null, user);
+      }
+
+      // Create new user
+      user = await User.create({
+        email: profile.emails[0].value,
+        name: profile.displayName,
+        provider: 'google',
+        providerUserId: profile.id,
+        isVerified: true
+      });
+
       return done(null, user);
+    } catch (error) {
+      return done(error, null);
     }
-
-    // Check if user exists with same email
-    user = await User.findOne({
-      where: { email: profile.emails[0].value }
-    });
-
-    if (user) {
-      // Link Google account to existing user
-      user.provider = 'google';
-      user.providerUserId = profile.id;
-      user.isVerified = true; // Google accounts are pre-verified
-      await user.save();
-      return done(null, user);
-    }
-
-    // Create new user
-    user = await User.create({
-      email: profile.emails[0].value,
-      name: profile.displayName,
-      provider: 'google',
-      providerUserId: profile.id,
-      isVerified: true
-    });
-
-    return done(null, user);
-  } catch (error) {
-    return done(error, null);
-  }
-}));
+  }));
+}
 
 exports.register = async (req, res) => {
   try {
@@ -131,28 +137,50 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.googleAuth = passport.authenticate('google', {
-  scope: ['profile', 'email']
-});
+// Google OAuth methods - only available if OAuth is configured
+if (process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.GOOGLE_CLIENT_ID !== 'your_google_client_id' &&
+  process.env.GOOGLE_CLIENT_SECRET !== 'your_google_client_secret') {
 
-exports.googleCallback = (req, res, next) => {
-  passport.authenticate('google', { session: false }, (err, user) => {
-    if (err) {
-      return res.status(500).json({ message: 'Authentication failed', error: err.message });
-    }
+  exports.googleAuth = passport.authenticate('google', {
+    scope: ['profile', 'email']
+  });
 
-    const token = generateToken(user);
-    res.json({
-      message: 'Google authentication successful',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name
+  exports.googleCallback = (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err, user) => {
+      if (err) {
+        return res.status(500).json({ message: 'Authentication failed', error: err.message });
       }
+
+      const token = generateToken(user);
+      res.json({
+        message: 'Google authentication successful',
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      });
+    })(req, res, next);
+  };
+} else {
+  // Fallback methods when OAuth is not configured
+  exports.googleAuth = (req, res) => {
+    res.status(503).json({
+      message: 'Google OAuth is not configured',
+      error: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables'
     });
-  })(req, res, next);
-};
+  };
+
+  exports.googleCallback = (req, res) => {
+    res.status(503).json({
+      message: 'Google OAuth is not configured',
+      error: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables'
+    });
+  };
+}
 
 exports.logout = (req, res) => {
   // For JWT, client-side token removal is sufficient
