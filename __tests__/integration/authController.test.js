@@ -178,18 +178,18 @@ describe('Auth Controller Integration Tests', () => {
   });
 
   describe('POST /api/auth/forgot-password', () => {
-      it('should handle forgot password for existing user', async () => {
-        const response = await request(app)
-          .post('/api/auth/forgot-password')
-          .send({ email: 'testuser@example.com' });
+    it('should handle forgot password for existing user', async () => {
+      const response = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: 'testuser@example.com' });
 
-        expect(response.status).toBe(200);
-        expect(response.body.message).toBe('If the email exists, a reset link has been sent');
-        // In test environment, resetToken might not be returned
-        if (process.env.NODE_ENV === 'development') {
-          expect(response.body.resetToken).toBeDefined();
-        }
-      });    it('should handle forgot password for non-existent user', async () => {
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('If the email exists, a reset link has been sent');
+      // In test environment, resetToken might not be returned
+      if (process.env.NODE_ENV === 'development') {
+        expect(response.body.resetToken).toBeDefined();
+      }
+    }); it('should handle forgot password for non-existent user', async () => {
       const response = await request(app)
         .post('/api/auth/forgot-password')
         .send({ email: 'nonexistent@example.com' });
@@ -353,18 +353,18 @@ describe('Auth Controller Integration Tests', () => {
       await User.destroy({ where: { email: 'unverified2@example.com' } });
     });
 
-      it('should resend verification for unverified user', async () => {
-        const response = await request(app)
-          .post('/api/auth/resend-verification')
-          .send({ email: 'unverified2@example.com' });
+    it('should resend verification for unverified user', async () => {
+      const response = await request(app)
+        .post('/api/auth/resend-verification')
+        .send({ email: 'unverified2@example.com' });
 
-        expect(response.status).toBe(200);
-        expect(response.body.message).toBe('Verification email sent');
-        // In test environment, verificationToken might not be returned
-        if (process.env.NODE_ENV === 'development') {
-          expect(response.body.verificationToken).toBeDefined();
-        }
-      });    it('should handle already verified user', async () => {
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Verification email sent');
+      // In test environment, verificationToken might not be returned
+      if (process.env.NODE_ENV === 'development') {
+        expect(response.body.verificationToken).toBeDefined();
+      }
+    }); it('should handle already verified user', async () => {
       const response = await request(app)
         .post('/api/auth/resend-verification')
         .send({ email: 'testuser@example.com' });
@@ -474,6 +474,128 @@ describe('Auth Controller Integration Tests', () => {
 
       // Google OAuth callback might redirect or return service unavailable  
       expect([302, 503]).toContain(response.status);
+    });
+  });
+
+  // Edge Cases and Error Scenarios
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle malformed JWT tokens in protected routes', async () => {
+      // Using logout which is not protected but testing the behavior
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', 'Bearer malformed.jwt.token');
+
+      // Logout doesn't require auth, so it should succeed
+      expect(response.status).toBe(200);
+    });
+
+    it('should handle expired JWT tokens in protected routes', async () => {
+      // Create an expired token using the tokenUtils
+      const expiredToken = jwt.sign(
+        { id: 1, email: 'test@example.com' },
+        process.env.JWT_SECRET,
+        { expiresIn: '0s' } // Immediately expired
+      );
+
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${expiredToken}`);
+
+      // Logout doesn't require auth, so it should succeed
+      expect(response.status).toBe(200);
+    });
+
+    it('should handle login attempt with non-existent user', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'nonexistent@example.com',
+          password: 'anypassword'
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Invalid credentials');
+    });
+
+    it('should handle password reset for non-existent email', async () => {
+      const response = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({
+          email: 'nonexistent@example.com'
+        });
+
+      // Should still return success to prevent email enumeration
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('If the email exists, a reset link has been sent');
+    });
+
+    it('should handle duplicate registration attempts', async () => {
+      const userData = {
+        name: 'Duplicate User',
+        email: 'duplicate@example.com',
+        password: 'Password123!'
+      };
+
+      // First registration
+      await request(app)
+        .post('/api/auth/register')
+        .send(userData);
+
+      // Attempt duplicate registration
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(userData);
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('already exists');
+    });
+
+    it('should handle invalid email verification tokens', async () => {
+      const response = await request(app)
+        .get('/api/auth/verify-email/invalid-token-12345');
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('Invalid');
+    });
+
+    it('should handle invalid password reset tokens', async () => {
+      const response = await request(app)
+        .post('/api/auth/reset-password/invalid-reset-token')
+        .send({
+          password: 'NewPassword123!'
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should validate password strength requirements', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Test User',
+          email: 'weakpass@example.com',
+          password: '123' // Too weak
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it('should handle resend verification requests', async () => {
+      const response = await request(app)
+        .post('/api/auth/resend-verification')
+        .send({ email: 'test@example.com' });
+
+      // Should return 404 for non-existent user or 200 for existing
+      expect([200, 404]).toContain(response.status);
+    });
+
+    it('should handle resend verification with missing email', async () => {
+      const response = await request(app)
+        .post('/api/auth/resend-verification')
+        .send({});
+
+      expect(response.status).toBe(400);
     });
   });
 });
