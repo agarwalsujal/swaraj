@@ -87,6 +87,7 @@ A Node.js backend with Express, PostgreSQL, and Google Gemini AI integration fea
    ```
 
 3. **Start with Docker Compose**:
+
    ```bash
    docker-compose up
    ```
@@ -117,6 +118,7 @@ A Node.js backend with Express, PostgreSQL, and Google Gemini AI integration fea
    - Update database credentials in .env
 
 4. **Run database migrations**:
+
    ```bash
    npm run db:migrate
    npm run db:seed
