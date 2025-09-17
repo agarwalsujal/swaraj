@@ -13,17 +13,17 @@ const pool = new Pool({
 async function clearData() {
   try {
     console.log('Clearing all data from tables...');
-    
+
     // Clear in reverse order due to foreign key constraints
     await pool.query('TRUNCATE TABLE "Logs" CASCADE');
     console.log('✓ Logs table cleared');
-    
+
     await pool.query('TRUNCATE TABLE "Subscriptions" CASCADE');
     console.log('✓ Subscriptions table cleared');
-    
+
     await pool.query('TRUNCATE TABLE "Users" CASCADE');
     console.log('✓ Users table cleared');
-    
+
     console.log('All tables cleared successfully!');
   } catch (err) {
     console.error('Error clearing tables:', err.message);

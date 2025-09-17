@@ -13,12 +13,12 @@ const pool = new Pool({
 async function dropAllTables() {
   try {
     console.log('Dropping all tables...');
-    
+
     await pool.query('DROP TABLE IF EXISTS "Logs" CASCADE');
     await pool.query('DROP TABLE IF EXISTS "Subscriptions" CASCADE');
     await pool.query('DROP TABLE IF EXISTS "Users" CASCADE');
     await pool.query('DROP TABLE IF EXISTS "SequelizeMeta" CASCADE');
-    
+
     console.log('All tables dropped successfully!');
   } catch (err) {
     console.error('Error dropping tables:', err.message);

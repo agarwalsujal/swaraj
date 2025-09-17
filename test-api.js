@@ -3,10 +3,10 @@ require('dotenv').config();
 
 const testEndpoints = async () => {
   const baseUrl = 'http://localhost:3000/api';
-  
+
   console.log('🧪 Testing Swaraj API Endpoints\n');
   console.log('='.repeat(50));
-  
+
   // Test 1: Health Check
   console.log('\n1. Testing Health Check...');
   try {
@@ -26,16 +26,16 @@ const testEndpoints = async () => {
       email: 'testapi@example.com',
       password: 'TestPassword123!'
     };
-    
+
     const response = await fetch(`${baseUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(registerData)
     });
-    
+
     const data = await response.json();
     console.log(`${response.status === 201 ? '✅' : '❌'} Registration: ${response.status} - ${data.message}`);
-    
+
     if (data.token) {
       console.log('   🔑 JWT Token received (first 50 chars):', data.token.substring(0, 50) + '...');
       // Store token for next test
@@ -52,16 +52,16 @@ const testEndpoints = async () => {
       email: 'admin@example.com', // Using seeded admin user
       password: 'admin123'
     };
-    
+
     const response = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(loginData)
     });
-    
+
     const data = await response.json();
     console.log(`${response.status === 200 ? '✅' : '❌'} Login: ${response.status} - ${data.message || 'Login attempt'}`);
-    
+
     if (data.token) {
       console.log('   🔑 JWT Token received for admin user');
       global.adminToken = data.token;
@@ -100,7 +100,7 @@ const testEndpoints = async () => {
       const queryData = {
         query: 'Hello, this is a test query for the AI system.'
       };
-      
+
       const response = await fetch(`${baseUrl}/ai/query`, {
         method: 'POST',
         headers: {
@@ -109,10 +109,10 @@ const testEndpoints = async () => {
         },
         body: JSON.stringify(queryData)
       });
-      
+
       const data = await response.json();
       console.log(`${response.status === 200 ? '✅' : '❌'} AI Query: ${response.status} - ${data.message || 'Query processed'}`);
-      
+
       if (data.response) {
         console.log('   🤖 AI Response received (first 100 chars):', data.response.substring(0, 100) + '...');
       }
