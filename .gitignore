@@ -1,0 +1,53 @@
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Env / Config ---
+.env
+.env.local
+.env.*.local
+
+# --- Logs ---
+logs/
+*.log
+*.log.*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# --- Runtime data ---
+tmp/
+temp/
+.cache/
+.cache-loader/
+
+# --- OS / IDE files ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# --- Build outputs ---
+dist/
+build/
+coverage/
+.next/
+out/
+
+# --- Database ---
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal
+.pgdata/
+dump.sql
+
+# --- Docker ---
+docker-compose.override.yml
+.docker/
