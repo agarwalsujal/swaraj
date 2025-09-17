@@ -1,4 +1,4 @@
-const { client, deployment } = require('../config/azureAI');
+const { model } = require('../config/geminiAI');
 const Log = require('../models/logModel');
 const Subscription = require('../models/subscriptionModel');
 const { Op } = require('sequelize');
@@ -8,8 +8,18 @@ exports.processQuery = async (req, res) => {
   try {
     const { query, options = {} } = req.body;
 
-    // Process query with Azure OpenAI
-    const result = await client.getCompletions(deployment, query, options);
+    // Process query with Gemini
+    const geminiOptions = {
+      temperature: options.temperature || 0.7,
+      topP: options.topP,
+      topK: options.topK,
+      maxOutputTokens: options.maxTokens || 1024,
+      ...options
+    };
+
+    const result = await model.generateContent(query, geminiOptions);
+    const response = await result.response;
+    const text = response.text();
 
     // Log the query
     await Log.create({
@@ -17,8 +27,15 @@ exports.processQuery = async (req, res) => {
       type: 'ai_query',
       message: query,
       metadata: {
-        response: result,
-        options
+        response: {
+          text: text,
+          promptFeedback: response.promptFeedback(),
+          candidates: response.candidates?.map(c => ({
+            content: c.content,
+            finishReason: c.finishReason
+          }))
+        },
+        options: geminiOptions
       }
     });
 
@@ -34,7 +51,7 @@ exports.processQuery = async (req, res) => {
 
     res.json({
       success: true,
-      result: result.choices[0].text
+      result: text
     });
   } catch (error) {
     // Log error

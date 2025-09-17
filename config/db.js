@@ -1,22 +1,53 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const config = require('./index');
+const logger = require('../utils/logger');
+
+// Custom SQL query logger
+const sqlLogger = (query) => {
+  logger.debug('SQL Query', {
+    sql: query.sql,
+    dialect: query.dialect,
+    duration: query.time,
+    ...(config.database.logParameters && { parameters: query.bind })
+  });
+};
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
+  config.database.name,
+  config.database.username,
+  config.database.password,
   {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    host: config.database.host,
+    port: config.database.port,
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    // Only log SQL in development mode or if explicitly enabled
+    logging: config.database.logQueries ? sqlLogger : false,
     pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
+      max: config.database.pool?.max || 5,
+      min: config.database.pool?.min || 0,
+      acquire: config.database.pool?.acquire || 30000,
+      idle: config.database.pool?.idle || 10000
     }
   }
 );
+
+// Log database connection events
+sequelize.authenticate()
+  .then(() => {
+    logger.info('Database connection established successfully', {
+      host: config.database.host,
+      port: config.database.port,
+      database: config.database.name
+    });
+  })
+  .catch(err => {
+    logger.error('Unable to connect to the database', {
+      host: config.database.host,
+      port: config.database.port,
+      database: config.database.name,
+      error: err.message,
+      stack: err.stack
+    });
+  });
 
 module.exports = sequelize;
